@@ -1,0 +1,395 @@
+:root {
+  color-scheme: dark;
+  --bg: #0b1016;
+  --panel: #0f171f;
+  --line: #2d3a43;
+  --text: #e6ebed;
+  --muted: #82909a;
+  --orange: #f1a15a;
+  --blue: #a5d8e2;
+  font-family: "Courier New", monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-height: 100svh;
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+button:focus-visible,
+a:focus-visible,
+canvas:focus-visible {
+  outline: 2px solid var(--orange);
+  outline-offset: 4px;
+}
+
+.page {
+  width: min(1180px, calc(100% - 48px));
+  margin: 0 auto;
+}
+
+.topbar {
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--line);
+}
+
+.brand {
+  color: var(--text);
+  text-decoration: none;
+  font-family: Arial, sans-serif;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 2px;
+}
+
+.brand-mark {
+  display: inline-block;
+  margin-right: 8px;
+  color: var(--orange);
+  transform: rotate(90deg);
+}
+
+.quiet-button {
+  border: 1px solid var(--line);
+  background: transparent;
+  padding: 9px 12px;
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: 1px;
+}
+
+.quiet-button:hover {
+  border-color: var(--orange);
+  color: var(--text);
+}
+
+.label-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 0 11px;
+  color: var(--muted);
+  font-size: 9px;
+  letter-spacing: 1.4px;
+}
+
+.ready {
+  color: #9cb69f;
+}
+
+.ready i {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.game-shell {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: #070d13;
+}
+
+canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+.hud {
+  position: absolute;
+  top: 20px;
+  right: 22px;
+  left: 22px;
+  display: flex;
+  gap: clamp(16px, 4vw, 42px);
+  pointer-events: none;
+}
+
+.hud div {
+  display: grid;
+  gap: 5px;
+}
+
+.hud span,
+.result span {
+  color: var(--muted);
+  font-size: 8px;
+  letter-spacing: 1.4px;
+}
+
+.hud strong {
+  font-size: 18px;
+  font-weight: normal;
+  letter-spacing: 1px;
+}
+
+.hull {
+  margin-left: auto;
+}
+
+.hull strong {
+  color: var(--blue);
+  font-size: 13px;
+  letter-spacing: 3px;
+}
+
+.screen {
+  position: absolute;
+  inset: 24% 0 auto;
+  display: grid;
+  justify-items: center;
+  text-align: center;
+}
+
+.screen[hidden] {
+  display: none;
+}
+
+.screen h1,
+.screen h2 {
+  margin: 12px 0;
+  font-family: Arial, sans-serif;
+  font-size: clamp(48px, 9vw, 92px);
+  font-style: italic;
+  letter-spacing: -5px;
+  line-height: 0.95;
+}
+
+.screen h1 span,
+.screen h2 span {
+  color: var(--orange);
+}
+
+.screen h2 {
+  font-size: clamp(40px, 6vw, 65px);
+}
+
+.screen p {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  color: #c4cdd2;
+  font-size: 14px;
+}
+
+.eyebrow {
+  color: var(--orange) !important;
+  font-family: "Courier New", monospace !important;
+  font-size: 8px !important;
+  letter-spacing: 2px;
+}
+
+.action {
+  min-width: 174px;
+  margin-top: 24px;
+  border: 1px solid #ffc18e;
+  background: var(--orange);
+  padding: 13px 22px;
+  color: #20150e;
+  font-size: 10px;
+  font-weight: bold;
+  letter-spacing: 1.5px;
+}
+
+.action:hover {
+  background: #ffc18b;
+  transform: translateY(-1px);
+}
+
+.screen small {
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 7px;
+  letter-spacing: 1.3px;
+}
+
+.result {
+  display: flex;
+  gap: 32px;
+  margin-top: 20px;
+}
+
+.result div {
+  display: grid;
+  gap: 7px;
+}
+
+.result strong {
+  font-size: 22px;
+  font-weight: normal;
+}
+
+.message {
+  position: absolute;
+  top: 28%;
+  right: 0;
+  left: 0;
+  margin: 0;
+  color: var(--orange);
+  font-size: 13px;
+  letter-spacing: 4px;
+  text-align: center;
+  opacity: 0;
+}
+
+.message.show {
+  opacity: 1;
+}
+
+.fire {
+  display: none;
+}
+
+.controls {
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 8px;
+  letter-spacing: 1px;
+}
+
+kbd {
+  display: inline-block;
+  border: 1px solid #40505b;
+  border-radius: 2px;
+  padding: 4px 6px;
+  color: #c4d0d5;
+  font: inherit;
+}
+
+footer {
+  min-height: 72px;
+  display: flex;
+  align-items: center;
+  gap: 26px;
+  color: #7c8992;
+  font-size: 8px;
+  letter-spacing: 1px;
+}
+
+.footer-note {
+  margin-left: auto;
+  color: #54616a;
+}
+
+.game-shell.running .screen,
+.game-shell.paused canvas,
+.game-shell.over canvas {
+  filter: brightness(0.45);
+}
+
+.game-shell.running .screen {
+  display: none;
+}
+
+@media (max-width: 700px) {
+  .page {
+    width: min(100% - 28px, 620px);
+  }
+
+  .topbar {
+    height: 65px;
+  }
+
+  .label-row {
+    font-size: 7px;
+  }
+
+  .game-shell {
+    aspect-ratio: 5 / 7;
+  }
+
+  .hud {
+    top: 15px;
+    right: 15px;
+    left: 15px;
+    gap: 13px;
+  }
+
+  .hud strong {
+    font-size: 14px;
+  }
+
+  .hull {
+    position: absolute;
+    top: 39px;
+    left: 0;
+    margin: 0;
+  }
+
+  .screen {
+    inset: 29% 0 auto;
+  }
+
+  .controls {
+    min-height: 52px;
+    justify-content: center;
+    gap: 12px;
+    font-size: 7px;
+  }
+
+  .controls span:last-child {
+    display: none;
+  }
+
+  footer {
+    min-height: 68px;
+    flex-wrap: wrap;
+    gap: 10px 18px;
+    padding: 16px 0;
+  }
+
+  .footer-note {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .game-shell.running .fire {
+    position: absolute;
+    right: 18px;
+    bottom: 20px;
+    display: block;
+    width: 68px;
+    height: 68px;
+    border: 1px solid var(--orange);
+    border-radius: 50%;
+    background: #f1a15a1c;
+    color: var(--orange);
+    font-size: 9px;
+    letter-spacing: 1px;
+    touch-action: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
+}

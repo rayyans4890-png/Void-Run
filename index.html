@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#0b0e10" />
+    <meta
+      name="description"
+      content="VOIDRUN — a standalone deep-space survival shooter. Pilot your ship, fight alien swarms, and beat your best score."
+    />
+    <title>VOIDRUN — Deep Space Survival</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath fill='%23f5a35b' d='M16 3 29 28 16 22 3 28Z'/%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="style.css" />
+    <script src="game.js" defer></script>
+  </head>
+  <body>
+    <main class="arcade">
+      <header class="masthead">
+        <a class="wordmark" href="index.html" aria-label="Voidrun home"
+          ><svg viewBox="0 0 28 28" aria-hidden="true">
+            <path d="m14 2 12 23-12-6L2 25Z" />
+            <path d="M14 10v8" /></svg
+          >VOIDRUN<span class="edition">ARCADE / 001</span></a
+        >
+        <div class="utilities">
+          <button
+            id="sound-button"
+            class="icon-button"
+            aria-label="Mute sound"
+            aria-pressed="false"
+            title="Toggle sound (M)"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M11 5 6 9H3v6h3l5 4V5Z" />
+              <path
+                class="sound-waves"
+                d="M15 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"
+              />
+              <path class="sound-slash" d="m16 9 6 6m0-6-6 6" /></svg
+            ><span>SOUND ON</span>
+          </button>
+          <span class="utility-divider"></span>
+          <button
+            id="fullscreen-button"
+            class="icon-button square"
+            aria-label="Enter fullscreen"
+            title="Fullscreen"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5" />
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <section class="game-section" aria-label="Voidrun arcade game">
+        <div class="section-caption">
+          <span
+            >DEEP SPACE <span class="caption-slash">/</span> ENDLESS
+            SURVIVAL</span
+          ><span class="system-status"><i></i> ALL SYSTEMS READY</span>
+        </div>
+        <div class="arena" id="arena">
+          <canvas
+            id="game"
+            tabindex="0"
+            aria-label="Space shooter. Move with WASD or arrow keys. Hold Space or left mouse to shoot. Press P or Escape to pause. On touch screens drag to move and hold Fire."
+            >Your browser needs Canvas support to play VOIDRUN.</canvas
+          >
+          <div class="hud" id="hud">
+            <div class="hud-left">
+              <div class="hud-stat">
+                <span class="stat-label">SCORE</span
+                ><span id="score" class="score-number">000000</span>
+              </div>
+              <div class="health-stat">
+                <span class="stat-label">HULL INTEGRITY</span>
+                <div
+                  id="health"
+                  class="health"
+                  role="meter"
+                  aria-label="Hull integrity"
+                  aria-valuemin="0"
+                  aria-valuemax="5"
+                  aria-valuenow="5"
+                >
+                  <i></i><i></i><i></i><i></i><i></i>
+                </div>
+              </div>
+            </div>
+            <div class="hud-right">
+              <div class="hud-stat">
+                <span class="stat-label">BEST</span
+                ><span id="best">000000</span>
+              </div>
+              <div class="hud-stat wave-stat">
+                <span class="stat-label">WAVE</span><span id="wave">01</span>
+              </div>
+              <button
+                id="pause-button"
+                class="pause-button"
+                aria-label="Pause game"
+                title="Pause (P)"
+              >
+                <span></span><span></span>
+              </button>
+            </div>
+          </div>
+          <div class="menu" id="menu">
+            <div class="sector-label">
+              <span></span> SECTOR 07 · UNCHARTED SPACE <span></span>
+            </div>
+            <h1>VOID<span>RUN</span></h1>
+            <p class="tagline">One ship. An endless swarm.</p>
+            <p class="mission">Stay sharp. Keep moving. Survive the void.</p>
+            <button class="primary-button" id="play-button">
+              <svg viewBox="0 0 20 20" aria-hidden="true">
+                <path d="m6 3 10 7-10 7Z" />
+              </svg>
+              PLAY GAME
+              <span aria-hidden="true"
+                ><svg viewBox="0 0 20 20"><path d="M4 16 16 4M4 4h12v12" /></svg
+              ></span>
+            </button>
+            <span class="launch-hint">OR PRESS ENTER TO LAUNCH</span>
+          </div>
+          <div class="menu result-menu" id="result-menu" hidden>
+            <div class="sector-label">SIGNAL LOST</div>
+            <h2>GAME <span>OVER</span></h2>
+            <p id="result-message" class="tagline">
+              The void claims another pilot.
+            </p>
+            <div class="run-stats">
+              <div><span>SCORE</span><strong id="final-score">0</strong></div>
+              <div>
+                <span>SURVIVED</span><strong id="final-time">0:00</strong>
+              </div>
+              <div><span>WAVE</span><strong id="final-wave">01</strong></div>
+            </div>
+            <button class="primary-button" id="restart-button">
+              RESTART FLIGHT
+              <span aria-hidden="true"
+                ><svg viewBox="0 0 20 20"><path d="M4 16 16 4M4 4h12v12" /></svg
+              ></span></button
+            ><span class="launch-hint">OR PRESS ENTER TO RESTART</span>
+          </div>
+          <div class="menu pause-menu" id="pause-menu" hidden>
+            <div class="sector-label">FLIGHT ON HOLD</div>
+            <h2>PAUSED</h2>
+            <p class="tagline">Take a breath. Space can wait.</p>
+            <button id="resume-button" class="primary-button">
+              RESUME FLIGHT
+              <span aria-hidden="true"
+                ><svg viewBox="0 0 20 20"><path d="M4 16 16 4M4 4h12v12" /></svg
+              ></span></button
+            ><span class="launch-hint">P / ESC TO RESUME</span>
+          </div>
+          <div class="arena-bottom">
+            <span><i></i> <span id="flight-status">AWAITING PILOT</span></span
+            ><span id="coordinates">X: 0600 &nbsp; Y: 0600</span>
+          </div>
+          <button
+            id="fire-button"
+            class="fire-button"
+            aria-label="Hold to shoot"
+          >
+            FIRE<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="6"/><path d="M12 2v5m0 10v5M2 12h5m10 0h5"/></svg>
+          </button>
+          <div id="announcement" class="announcement" aria-live="polite"></div>
+          <span class="corner corner-tl"></span
+          ><span class="corner corner-tr"></span
+          ><span class="corner corner-bl"></span
+          ><span class="corner corner-br"></span>
+        </div>
+        <div class="control-bar">
+          <div class="desktop-controls">
+            <span class="control-group"
+              ><span class="keys"
+                ><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span
+              ><span class="or">/</span
+              ><span class="keys arrows"
+                ><kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd></span
+              ><span>MOVE</span></span
+            ><span class="control-group"
+              ><kbd class="space-key">SPACE</kbd><span class="or">/</span
+              ><svg viewBox="0 0 18 22" aria-hidden="true">
+                <rect x="3" y="1" width="12" height="19" rx="6" />
+                <path d="M9 1v7H3" /></svg
+              ><span>SHOOT</span></span
+            ><span class="control-group"><kbd>P</kbd><span>PAUSE</span></span>
+          </div>
+          <span class="touch-instructions"
+            >DRAG TO MOVE <span>·</span> HOLD FIRE TO SHOOT</span
+          ><span class="offline-note">NO DOWNLOAD. JUST PLAY.</span>
+        </div>
+      </section>
+
+      <footer class="footer">
+        <span class="field-guide-label">KNOW YOUR ENEMY</span>
+        <div class="enemy-guide">
+          <div>
+            <canvas
+              data-enemy="basic"
+              width="40"
+              height="34"
+              aria-hidden="true"
+            ></canvas
+            ><span>DRIFTER <small>100 PTS</small></span>
+          </div>
+          <div>
+            <canvas
+              data-enemy="fast"
+              width="40"
+              height="34"
+              aria-hidden="true"
+            ></canvas
+            ><span>STINGER <small>150 PTS</small></span>
+          </div>
+          <div>
+            <canvas
+              data-enemy="heavy"
+              width="40"
+              height="34"
+              aria-hidden="true"
+            ></canvas
+            ><span>BRUTE <small>400 PTS</small></span>
+          </div>
+        </div>
+        <span class="footer-note">A LITTLE SHIP. A BIG UNIVERSE.</span>
+      </footer>
+      <div id="notice" class="notice" role="status"></div>
+    </main>
+  </body>
+</html>
