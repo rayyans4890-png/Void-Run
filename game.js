@@ -1,416 +1,391 @@
-(() => {
-  const $ = (id) => document.getElementById(id);
-  const canvas = $("game");
-  const ctx = canvas.getContext("2d");
-  const shell = $("game-shell");
-  const ui = {
-    score: $("score"),
-    best: $("best"),
-    wave: $("wave"),
-    lives: $("lives"),
-    message: $("message"),
-    intro: $("intro"),
-    paused: $("paused"),
-    over: $("over"),
-    finalScore: $("final-score"),
-    finalTime: $("final-time"),
-    finalWave: $("final-wave"),
+window.onerror = function(){
+  return true;
+};
+
+window.onload = function(){
+  var c = document.querySelector("#game");
+  var canvas = document.querySelector("#game");
+  canvas.width = 960;
+  canvas.height = 540;
+  c = canvas.getContext("2d");
+
+  var shell = document.querySelector("#game-shell");
+  var intro_element = document.querySelector("#intro");
+  var paused_element = document.querySelector("#paused");
+  var over_element = document.querySelector("#over");
+  var pause_button = document.querySelector("#pause");
+  var score_element = document.querySelector("#score");
+  var best_element = document.querySelector("#best");
+  var wave_element = document.querySelector("#wave");
+  var lives_element = document.querySelector("#lives");
+  var message_element = document.querySelector("#message");
+
+  var width = 960;
+  var height = 540;
+  var mode = "menu";
+  var mouse = {
+    x: width/2,
+    y: height-80
   };
+  var keys = {};
 
-  const width = 960;
-  const height = 540;
-  const limit = (value, low, high) => Math.max(low, Math.min(high, value));
-  const random = (low, high) => low + Math.random() * (high - low);
-  const pad = (value) => String(value).padStart(6, "0");
-  const keys = new Set();
-  const stars = Array.from({ length: 80 }, () => ({
-    x: Math.random() * width,
-    y: Math.random() * height,
-    size: random(0.5, 2),
-    speed: random(8, 30),
-  }));
+  var player_width = 34;
+  var player_height = 34;
+  var score = 0;
+  var health = 5;
 
-  let mode = "menu";
-  let best = loadBest();
-  let lastFrame = 0;
-  let mouseDown = false;
-  let touchTarget = null;
-  let fireHeld = false;
-  let noticeUntil = 0;
-  let game;
+  var _bullets = [];
+  var bullet_width = 2;
+  var bullet_height = 12;
+  var bullet_speed = 650;
 
-  function loadBest() {
-    try {
-      return Number(localStorage.getItem("voidrun-best")) || 0;
-    } catch {
-      return 0;
-    }
+  var _enemies = [];
+  var enemy_width = 36;
+  var enemy_height = 36;
+
+  var _lastframe = 0;
+  var _seconds = 0;
+  var _wave = 1;
+
+  var best = 0;
+  try {
+    best = Number(localStorage.getItem("voidrun-best")) || 0;
+  } catch (err) {
+    best = 0;
   }
 
-  function saveBest() {
-    if (game.score <= best) return;
-    best = game.score;
-    try {
-      localStorage.setItem("voidrun-best", String(best));
-    } catch {}
-  }
-
-  function newGame() {
-    game = {
-      seconds: 0,
-      score: 0,
-      wave: 1,
-      spawnIn: 0.8,
-      shootIn: 0,
-      player: { x: width / 2, y: height - 80, lives: 5, shield: 0 },
-      bullets: [],
-      enemies: [],
-    };
-  }
-
-  function setMode(next) {
+  function setMode(next){
     mode = next;
     shell.classList.toggle("running", next === "running");
     shell.classList.toggle("paused", next === "paused");
     shell.classList.toggle("over", next === "over");
-    ui.intro.hidden = next !== "menu";
-    ui.paused.hidden = next !== "paused";
-    ui.over.hidden = next !== "over";
-    $("pause").hidden = next === "menu" || next === "over";
-    if (next !== "running") clearInput();
-  }
-
-  function start() {
-    newGame();
-    setMode("running");
-    updateHud();
-    canvas.focus({ preventScroll: true });
-  }
-
-  function pause() {
-    if (mode === "running") {
-      setMode("paused");
-      $("resume").focus({ preventScroll: true });
-    } else if (mode === "paused") {
-      setMode("running");
-      canvas.focus({ preventScroll: true });
+    intro_element.hidden = next !== "menu";
+    paused_element.hidden = next !== "paused";
+    over_element.hidden = next !== "over";
+    pause_button.hidden = next === "menu" || next === "over";
+    if (next !== "running"){
+      keys = {};
     }
   }
 
-  function finish() {
-    saveBest();
-    ui.finalScore.textContent = game.score.toLocaleString();
-    ui.finalTime.textContent = `${Math.floor(game.seconds / 60)}:${String(Math.floor(game.seconds % 60)).padStart(2, "0")}`;
-    ui.finalWave.textContent = String(game.wave).padStart(2, "0");
-    setMode("over");
-    $("again").focus({ preventScroll: true });
-  }
-
-  function clearInput() {
-    keys.clear();
-    mouseDown = false;
-    fireHeld = false;
-    touchTarget = null;
-  }
-
-  function updateHud() {
-    ui.score.textContent = pad(game.score);
-    ui.best.textContent = pad(best);
-    ui.wave.textContent = String(game.wave).padStart(2, "0");
-    ui.lives.textContent = "■".repeat(game.player.lives) + "□".repeat(5 - game.player.lives);
-  }
-
-  function announce(text) {
-    ui.message.textContent = text;
-    ui.message.classList.add("show");
-    noticeUntil = game.seconds + 2;
-  }
-
-  function spawnEnemy() {
-    const roll = Math.random();
-    const kind = game.wave > 3 && roll < 0.16 ? "brute" : game.wave > 1 && roll < 0.42 ? "stinger" : "drifter";
-    const settings = {
-      drifter: { r: 18, hp: 2, speed: 62, points: 100, color: "#9db89f" },
-      stinger: { r: 12, hp: 1, speed: 120, points: 150, color: "#e1ad65" },
-      brute: { r: 28, hp: 7, speed: 40, points: 400, color: "#c3889a" },
-    }[kind];
-    game.enemies.push({
-      ...settings,
-      kind,
-      x: random(settings.r, width - settings.r),
-      y: -settings.r,
-      age: 0,
-      hit: 0,
-    });
-  }
-
-  function shoot() {
-    if (game.shootIn > 0) return;
-    game.shootIn = 0.16;
-    for (const offset of [-8, 8]) {
-      game.bullets.push({ x: game.player.x + offset, y: game.player.y - 20 });
-    }
-  }
-
-  function hitPlayer(enemy) {
-    enemy.dead = true;
-    if (game.player.shield > 0) return;
-    game.player.lives--;
-    game.player.shield = 1.2;
-    updateHud();
-    if (game.player.lives <= 0) finish();
-  }
-
-  function destroy(enemy) {
-    enemy.dead = true;
-    game.score += enemy.points;
-    saveBest();
-    updateHud();
-  }
-
-  function update(delta) {
-    game.seconds += delta;
-    const nextWave = 1 + Math.floor(game.seconds / 25);
-    if (nextWave !== game.wave) {
-      game.wave = nextWave;
-      game.player.lives = Math.min(5, game.player.lives + 1);
-      announce(`WAVE ${String(game.wave).padStart(2, "0")}`);
-      updateHud();
-    }
-
-    if (noticeUntil && game.seconds > noticeUntil) ui.message.classList.remove("show");
-    game.shootIn = Math.max(0, game.shootIn - delta);
-    game.player.shield = Math.max(0, game.player.shield - delta);
-
-    let dx = (keys.has("KeyD") || keys.has("ArrowRight") ? 1 : 0) - (keys.has("KeyA") || keys.has("ArrowLeft") ? 1 : 0);
-    let dy = (keys.has("KeyS") || keys.has("ArrowDown") ? 1 : 0) - (keys.has("KeyW") || keys.has("ArrowUp") ? 1 : 0);
-    if (touchTarget) {
-      game.player.x += (touchTarget.x - game.player.x) * Math.min(1, delta * 12);
-      game.player.y += (touchTarget.y - game.player.y) * Math.min(1, delta * 12);
-    } else if (dx || dy) {
-      const length = Math.hypot(dx, dy);
-      game.player.x += (dx / length) * 300 * delta;
-      game.player.y += (dy / length) * 300 * delta;
-    }
-    game.player.x = limit(game.player.x, 24, width - 24);
-    game.player.y = limit(game.player.y, 75, height - 30);
-
-    if (keys.has("Space") || mouseDown || fireHeld) shoot();
-
-    game.spawnIn -= delta;
-    if (game.spawnIn <= 0) {
-      if (game.enemies.length < 45) spawnEnemy();
-      game.spawnIn = Math.max(0.3, 1.15 - game.seconds / 180) * random(0.75, 1.2);
-    }
-
-    for (const bullet of game.bullets) bullet.y -= 650 * delta;
-    game.bullets = game.bullets.filter((bullet) => bullet.y > -20);
-
-    for (const enemy of game.enemies) {
-      enemy.age += delta;
-      enemy.hit = Math.max(0, enemy.hit - delta);
-      const targetX = game.player.x - enemy.x;
-      const targetY = game.player.y - enemy.y;
-      const distance = Math.hypot(targetX, targetY) || 1;
-      const drift = enemy.kind === "stinger" ? Math.sin(enemy.age * 8) * 34 : Math.sin(enemy.age * 2) * 16;
-      enemy.x += ((targetX / distance) * enemy.speed * 0.5 + drift) * delta;
-      enemy.y += ((targetY / distance) * enemy.speed * 0.65 + enemy.speed * 0.35) * delta;
-      enemy.x = limit(enemy.x, enemy.r, width - enemy.r);
-
-      for (const bullet of game.bullets) {
-        if (bullet.dead || enemy.dead) continue;
-        if (Math.hypot(bullet.x - enemy.x, bullet.y - enemy.y) < enemy.r + 4) {
-          bullet.dead = true;
-          enemy.hp--;
-          enemy.hit = 0.08;
-          if (enemy.hp <= 0) destroy(enemy);
-        }
-      }
-
-      if (!enemy.dead && Math.hypot(enemy.x - game.player.x, enemy.y - game.player.y) < enemy.r + 15) hitPlayer(enemy);
-      if (enemy.y > height + enemy.r) enemy.dead = true;
-    }
-    game.bullets = game.bullets.filter((bullet) => !bullet.dead);
-    game.enemies = game.enemies.filter((enemy) => !enemy.dead);
-  }
-
-  function polygon(points, fill, stroke) {
-    ctx.beginPath();
-    ctx.moveTo(points[0][0], points[0][1]);
-    for (let index = 1; index < points.length; index++) ctx.lineTo(points[index][0], points[index][1]);
-    ctx.closePath();
-    if (fill) {
-      ctx.fillStyle = fill;
-      ctx.fill();
-    }
-    if (stroke) {
-      ctx.strokeStyle = stroke;
-      ctx.stroke();
-    }
-  }
-
-  function drawShip() {
-    const { x, y, shield } = game.player;
-    ctx.save();
-    ctx.translate(x, y);
-    polygon([[0, -24], [-17, 18], [0, 13], [17, 18]], "#b7c9cf", "#e6f0f1");
-    polygon([[0, -13], [-5, 8], [0, 14], [5, 8]], "#274f60", "#7fb0bf");
-    ctx.fillStyle = "#f1a15a";
-    ctx.beginPath();
-    ctx.moveTo(-5, 16);
-    ctx.lineTo(0, 27 + Math.sin(game.seconds * 28) * 4);
-    ctx.lineTo(5, 16);
-    ctx.fill();
-    if (shield > 0) {
-      ctx.strokeStyle = "#a5d8e2";
-      ctx.globalAlpha = 0.35 + Math.sin(game.seconds * 18) * 0.2;
-      ctx.beginPath();
-      ctx.arc(0, 0, 31, 0, Math.PI * 2);
-      ctx.stroke();
-    }
-    ctx.restore();
-    ctx.globalAlpha = 1;
-  }
-
-  function drawEnemy(enemy) {
-    ctx.save();
-    ctx.translate(enemy.x, enemy.y);
-    ctx.fillStyle = enemy.hit ? "#fff2de" : enemy.color;
-    if (enemy.kind === "drifter") {
-      polygon([[-18, -8], [-8, -15], [0, -8], [8, -15], [18, -8], [13, 13], [0, 18], [-13, 13]], "#344a42", enemy.color);
-      ctx.fillRect(-7, -3, 14, 7);
-    } else if (enemy.kind === "stinger") {
-      polygon([[0, 18], [-15, -12], [0, -8], [15, -12]], "#5c4630", enemy.color);
-      ctx.fillRect(-3, -4, 6, 9);
-    } else {
-      polygon([[-24, -8], [-12, -18], [12, -18], [24, -8], [19, 15], [0, 22], [-19, 15]], "#4e3743", enemy.color);
-      ctx.fillStyle = "#301f29";
-      ctx.fillRect(-10, -2, 20, 7);
-    }
-    ctx.restore();
-  }
-
-  function drawBackground() {
-    ctx.fillStyle = "#071019";
-    ctx.fillRect(0, 0, width, height);
-    for (const star of stars) {
-      const y = (star.y + game.seconds * star.speed) % height;
-      ctx.fillStyle = star.speed > 22 ? "#b3ccd5" : "#5d7d89";
-      ctx.fillRect(star.x, y, star.size, star.size);
-    }
-    const glow = ctx.createRadialGradient(width * 0.82, height * 0.22, 5, width * 0.82, height * 0.22, 120);
-    glow.addColorStop(0, "#3d58622b");
-    glow.addColorStop(1, "#07101900");
-    ctx.fillStyle = glow;
-    ctx.fillRect(0, 0, width, height);
-  }
-
-  function render() {
-    const scale = Math.min(canvas.width / width, canvas.height / height);
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.fillStyle = "#071019";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.setTransform(scale, 0, 0, scale, (canvas.width - width * scale) / 2, (canvas.height - height * scale) / 2);
-    drawBackground();
-    if (mode === "menu") {
-      drawShip();
+  function saveBest(){
+    if (score <= best){
       return;
     }
-    for (const bullet of game.bullets) {
-      ctx.fillStyle = "#d9f7f5";
-      ctx.fillRect(bullet.x - 1, bullet.y, 2, 12);
+    best = score;
+    try {
+      localStorage.setItem("voidrun-best", String(best));
+    } catch (err) {
     }
-    for (const enemy of game.enemies) drawEnemy(enemy);
-    drawShip();
   }
 
-  function frame(now) {
-    const delta = lastFrame ? Math.min((now - lastFrame) / 1000, 0.035) : 0;
-    lastFrame = now;
-    if (mode === "running") update(delta);
-    render();
-    requestAnimationFrame(frame);
+  function startGame(){
+    mouse.x = width/2;
+    mouse.y = height-80;
+    score = 0;
+    health = 5;
+    _seconds = 0;
+    _wave = 1;
+    _bullets = [];
+    _enemies = [];
+    __player = new Player(mouse.x, mouse.y, player_width, player_height);
+    setMode("running");
+    updateHud();
   }
 
-  function resize() {
-    const rect = canvas.getBoundingClientRect();
-    const ratio = Math.min(window.devicePixelRatio || 1, 2);
-    canvas.width = Math.round(rect.width * ratio);
-    canvas.height = Math.round(rect.height * ratio);
+  function pauseGame(){
+    if (mode === "running"){
+      setMode("paused");
+    } else if (mode === "paused"){
+      setMode("running");
+    }
   }
 
-  function point(event) {
-    const rect = canvas.getBoundingClientRect();
-    const scale = Math.min(rect.width / width, rect.height / height);
-    return {
-      x: (event.clientX - rect.left - (rect.width - width * scale) / 2) / scale,
-      y: (event.clientY - rect.top - (rect.height - height * scale) / 2) / scale,
+  function finishGame(){
+    saveBest();
+    document.querySelector("#final-score").textContent = score.toLocaleString();
+    document.querySelector("#final-time").textContent = Math.floor(_seconds / 60) + ":" + String(Math.floor(_seconds % 60)).padStart(2, "0");
+    document.querySelector("#final-wave").textContent = String(_wave).padStart(2, "0");
+    setMode("over");
+  }
+
+  function Player(x, y, width, height){
+    this.x = x;
+    this.y = y;
+    this.width = width;
+    this.height = height;
+
+    this.draw = function(){
+      c.beginPath();
+      c.save();
+      c.translate(this.x, this.y);
+      c.fillStyle = "#b7c9cf";
+      c.strokeStyle = "#e6f0f1";
+      c.moveTo(0, -24);
+      c.lineTo(-17, 18);
+      c.lineTo(0, 13);
+      c.lineTo(17, 18);
+      c.closePath();
+      c.fill();
+      c.stroke();
+      c.fillStyle = "#f1a15a";
+      c.beginPath();
+      c.moveTo(-5, 16);
+      c.lineTo(0, 27 + Math.sin(_seconds * 28) * 4);
+      c.lineTo(5, 16);
+      c.fill();
+      c.restore();
+    };
+
+    this.update = function(){
+      this.draw();
     };
   }
 
-  canvas.addEventListener("pointerdown", (event) => {
-    if (mode !== "running") return;
-    if (event.pointerType === "mouse") mouseDown = true;
-    else touchTarget = point(event);
-    canvas.setPointerCapture(event.pointerId);
-    event.preventDefault();
-  });
+  function Bullet(x, y, width, height, speed){
+    this.x = x;
+    this.y = y;
+    this.width = width;
+    this.height = height;
+    this.speed = speed;
 
-  canvas.addEventListener("pointermove", (event) => {
-    if (touchTarget && event.pointerType !== "mouse") touchTarget = point(event);
-  });
+    this.draw = function(){
+      c.beginPath();
+      c.rect(this.x, this.y, this.width, this.height);
+      c.fillStyle = "#d9f7f5";
+      c.fill();
+    };
 
-  function release(event) {
-    if (event.pointerType === "mouse") mouseDown = false;
-    touchTarget = null;
+    this.update = function(){
+      this.y -= this.speed * 0.016;
+      this.draw();
+    };
   }
 
-  window.addEventListener("pointerup", release);
-  window.addEventListener("pointercancel", release);
-  canvas.addEventListener("contextmenu", (event) => event.preventDefault());
+  function Enemy(x, y, width, height, speed){
+    this.x = x;
+    this.y = y;
+    this.width = width;
+    this.height = height;
+    this.speed = speed;
 
-  $("fire").addEventListener("pointerdown", (event) => {
-    if (mode !== "running") return;
-    fireHeld = true;
-    event.currentTarget.setPointerCapture(event.pointerId);
-    event.preventDefault();
-  });
+    this.draw = function(){
+      c.beginPath();
+      c.fillStyle = "#9db89f";
+      c.strokeStyle = "#e6f0f1";
+      c.moveTo(this.x, this.y);
+      c.lineTo(this.x - this.width/2, this.y + this.height/2);
+      c.lineTo(this.x, this.y + this.height);
+      c.lineTo(this.x + this.width/2, this.y + this.height/2);
+      c.closePath();
+      c.fill();
+      c.stroke();
+    };
 
-  for (const name of ["pointerup", "pointercancel", "lostpointercapture"]) {
-    $("fire").addEventListener(name, () => {
-      fireHeld = false;
-    });
+    this.update = function(){
+      this.y += this.speed * 0.016;
+      this.draw();
+    };
   }
 
-  window.addEventListener("keydown", (event) => {
-    if (event.code === "Enter" && (mode === "menu" || mode === "over") && !event.repeat) {
-      start();
+  var __player = new Player(mouse.x, mouse.y, player_width, player_height);
+
+  canvas.addEventListener("mousemove", function(event){
+    var rect = canvas.getBoundingClientRect();
+    mouse.x = (event.clientX - rect.left) * (width / rect.width);
+    mouse.y = (event.clientY - rect.top) * (height / rect.height);
+  });
+  canvas.addEventListener("touchmove", function(event){
+    var rect = canvas.getBoundingClientRect();
+    var touch = event.changedTouches[0];
+    var touchX = parseInt(touch.clientX);
+    var touchY = parseInt(touch.clientY) - rect.top;
+    event.preventDefault();
+    mouse.x = touchX * (width / rect.width);
+    mouse.y = touchY * (height / rect.height);
+  });
+
+  window.addEventListener("keydown", function(event){
+    if (event.code === "Enter" && (mode === "menu" || mode === "over") && !event.repeat){
+      startGame();
       return;
     }
-    if (["KeyP", "Escape"].includes(event.code) && !event.repeat) {
-      pause();
+    if ((event.code === "KeyP" || event.code === "Escape") && !event.repeat){
+      pauseGame();
       return;
     }
-    if (mode === "running") {
-      if (["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.code)) event.preventDefault();
-      keys.add(event.code);
+    if (mode === "running"){
+      keys[event.code] = true;
+      if (["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].indexOf(event.code) > -1){
+        event.preventDefault();
+      }
+    }
+  });
+  window.addEventListener("keyup", function(event){
+    keys[event.code] = false;
+  });
+  window.addEventListener("blur", function(){
+    if (mode === "running"){
+      pauseGame();
     }
   });
 
-  window.addEventListener("keyup", (event) => keys.delete(event.code));
-  window.addEventListener("blur", () => {
-    if (mode === "running") pause();
-  });
+  document.querySelector("#play").addEventListener("click", startGame);
+  document.querySelector("#again").addEventListener("click", startGame);
+  pause_button.addEventListener("click", pauseGame);
+  document.querySelector("#resume").addEventListener("click", pauseGame);
 
-  $("play").addEventListener("click", start);
-  $("again").addEventListener("click", start);
-  $("pause").addEventListener("click", pause);
-  $("resume").addEventListener("click", pause);
-  window.addEventListener("resize", resize);
+  function collision(a,b){
+    return a.x < b.x + b.width &&
+           a.x + a.width > b.x &&
+           a.y < b.y + b.height &&
+           a.y + a.height > b.y;
+  }
 
-  newGame();
-  resize();
+  c.font = "1em Arial";
+
+  function drawEnemies(){
+    if (mode !== "running"){
+      return;
+    }
+    for (var _ = 0; _<1; _++){
+      var x = Math.random()*(width-enemy_width);
+      var y = -enemy_height;
+      var speed = 40 + Math.random()*80;
+      var __enemy = new Enemy(x, y, enemy_width, enemy_height, speed);
+      _enemies.push(__enemy);
+    }
+  }setInterval(drawEnemies, 1000);
+
+  function fire(){
+    if (mode !== "running"){
+      return;
+    }
+    for (var _ = 0; _<1; _++){
+      var x = mouse.x-bullet_width/2;
+      var y = mouse.y-player_height;
+      var __bullet = new Bullet(x, y, bullet_width, bullet_height, bullet_speed);
+      _bullets.push(__bullet);
+    }
+  }setInterval(fire, 200);
+
+  function updateHud(){
+    score_element.textContent = String(score).padStart(6, "0");
+    best_element.textContent = String(best).padStart(6, "0");
+    wave_element.textContent = String(_wave).padStart(2, "0");
+    lives_element.textContent = "■".repeat(health) + "□".repeat(5 - health);
+  }
+
+  function showMessage(text){
+    message_element.textContent = text;
+    message_element.style.opacity = "1";
+    setTimeout(function(){
+      message_element.style.opacity = "0";
+    }, 2000);
+  }
+
+  function drawBackground(){
+    c.beginPath();
+    c.fillStyle = "#071019";
+    c.fillRect(0,0,width,height);
+  }
+
+  function update(delta){
+    _seconds += delta;
+
+    var dx = 0;
+    var dy = 0;
+    if (keys["KeyD"] || keys["ArrowRight"]){
+      dx = 1;
+    }
+    if (keys["KeyA"] || keys["ArrowLeft"]){
+      dx = -1;
+    }
+    if (keys["KeyS"] || keys["ArrowDown"]){
+      dy = 1;
+    }
+    if (keys["KeyW"] || keys["ArrowUp"]){
+      dy = -1;
+    }
+    if (dx || dy){
+      var length = Math.hypot(dx, dy);
+      mouse.x += (dx / length) * 300 * delta;
+      mouse.y += (dy / length) * 300 * delta;
+    }
+    mouse.x = Math.max(24, Math.min(width-24, mouse.x));
+    mouse.y = Math.max(24, Math.min(height-30, mouse.y));
+
+    __player.x = mouse.x - player_width/2;
+    __player.y = mouse.y - player_height/2;
+
+    var nextWave = 1 + Math.floor(_seconds / 25);
+    if (nextWave !== _wave){
+      _wave = nextWave;
+      health = Math.min(5, health + 1);
+      showMessage("WAVE " + String(_wave).padStart(2, "0"));
+      updateHud();
+    }
+
+    for (var i=0; i < _bullets.length; i++){
+      _bullets[i].update();
+      if (_bullets[i].y < 0){
+        _bullets.splice(i, 1);
+      }
+    }
+
+    for (var k=0; k < _enemies.length; k++){
+      _enemies[k].update();
+      if(_enemies[k].y > height){
+        _enemies.splice(k, 1);
+        health -= 1;
+        updateHud();
+      if(health <= 0){
+        alert("You DIED!\nYour score was "+score);
+        finishGame();
+        return;
+       }
+      }
+    }
+
+    for(var j = _enemies.length-1; j >= 0; j--){
+      for(var l = _bullets.length-1; l >= 0; l--){
+        if(collision(_enemies[j], _bullets[l])){
+          _enemies.splice(j, 1);
+          _bullets.splice(l, 1);
+          score++;
+          updateHud();
+        }
+      }
+    }
+  }
+
+  function render(){
+    drawBackground();
+    if (mode === "menu"){
+      __player.x = width/2 - player_width/2;
+      __player.y = height-80 - player_height/2;
+    }
+    for (var i=0; i < _bullets.length; i++){
+      _bullets[i].draw();
+    }
+    for (var k=0; k < _enemies.length; k++){
+      _enemies[k].draw();
+    }
+    __player.draw();
+  }
+
+  function animate(){
+    requestAnimationFrame(animate);
+    var now = performance.now();
+    var delta = Math.min((now - (_lastframe || now)) / 1000, 0.035);
+    _lastframe = now;
+    if (mode === "running"){
+      update(delta);
+    }
+    render();
+  }
+
   updateHud();
   setMode("menu");
-  requestAnimationFrame(frame);
-})();
+  animate();
+  };
