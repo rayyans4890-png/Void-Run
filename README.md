@@ -1,33 +1,18 @@
 ## Void run 
-This is a 2D shooting browser game made for the stardance event, this project was made by Rayyan Shahid. I am proud of this project honestly though making a browser game is easier then i thought, for this game i have chosen the theme of the player being in a space ship and he has to shoot at aliens coming at him.
+This is a 2D shooting browser game made for the stardance event, this project was made by Rayyan Shahid. I am proud of this project honestly though making a browser game is easier then i thought, for this game i have chosen the theme of the player being in a space ship and he has to shoot at aliens coming at him. 
 
-## Bullet points
+# Movement
+To move you can either use the arow keys or wasd and for shooting its either space or the mouse and to pause/stop the game just press P 
 
-# HTML (index.html)
-
-- Semantic single-page layout: Header (brand, sound/fullscreen) → Main game section (canvas + HUD + 3 menus) → Footer (enemy guide)
-- Four menu states via [hidden]: Start (#menu), Game Over (#result-menu), Pause (#pause-menu), running (none visible)
-- HUD split left/right: Score + 5-segment hull meter left; best score, wave, pause button right
-- Full ARIA: Canvas labeled, health meter uses role="meter", live region for announcements, touch fire button labeled
-
-# CSS (style.css)
-
-- CSS custom properties for theming: --bg, --panel, --line, --text, --muted, --orange, --blue — dark space palette
-- State-driven visibility via .game-shell classes: .running hides menus, .paused/.over dims canvas, .running .fire shows mobile button
-- Fluid responsive layout: .page max 1180px, .game-shell 16:9 desktop / 5:7 mobile, HUD absolute overlay with clamp() gaps
-- Reduced motion support: prefers-reduced-motion disables all transitions instantly
-
-# JavaScript (game.js)
-
-- IIFE + state machine: menu → running ↔ paused → over → menu; single game object holds all runtime state
-- Fixed 960×540 logical resolution: Scaled via setTransform; delta-time physics capped at 35ms/frame
-- Three procedural enemy types: Drifter (base), Stinger (wave 2+, sine drift), Brute (wave 4+, 7 HP); spawn rate ↑ every 25s wave
-- Unified input → update → render loop: Keys Set + touchTarget + fireHeld drive player; bullets/enemies filtered each frame; localStorage persists best 
+## Bom 
+- HTML
+- JS
+- CSS
 
 # Gameplay pics 
-  
-  <img width="1885" height="897" alt="image" src="https://github.com/user-attachments/assets/fdee310e-5e1a-4edb-9f5c-ede262cb0b47" />
 
-  <img width="1896" height="892" alt="image" src="https://github.com/user-attachments/assets/4fcb6348-07b6-4b50-8211-86b1b62c0d3f" />
+  <img width="1762" height="901" alt="image" src="https://github.com/user-attachments/assets/350d135a-9031-45d8-84db-0144a058cfb1" />
 
-  <img width="1907" height="912" alt="image" src="https://github.com/user-attachments/assets/ad161286-503a-4279-84b0-2ad0b60302b0" />
+  <img width="1636" height="887" alt="image" src="https://github.com/user-attachments/assets/a5dd11a5-f53e-439b-83df-a15dca706365" />
+
+  <img width="1916" height="883" alt="image" src="https://github.com/user-attachments/assets/c7769c97-414c-4b81-b83f-c064f731b10e" />
