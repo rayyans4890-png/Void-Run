@@ -1,24 +1,20 @@
-window.onerror = function(){
-  return true;
-};
-
 window.onload = function(){
-  var c = document.querySelector("#game");
   var canvas = document.querySelector("#game");
   canvas.width = 960;
   canvas.height = 540;
-  c = canvas.getContext("2d");
+  var context = canvas.getContext("2d");
 
   var shell = document.querySelector("#game-shell");
-  var intro_element = document.querySelector("#intro");
-  var paused_element = document.querySelector("#paused");
-  var over_element = document.querySelector("#over");
-  var pause_button = document.querySelector("#pause");
-  var score_element = document.querySelector("#score");
-  var best_element = document.querySelector("#best");
-  var wave_element = document.querySelector("#wave");
-  var lives_element = document.querySelector("#lives");
-  var message_element = document.querySelector("#message");
+  var intro = document.querySelector("#intro");
+  var paused = document.querySelector("#paused");
+  var over = document.querySelector("#over");
+  var pauseButton = document.querySelector("#pause");
+  var fireButton = document.querySelector("#fire");
+  var scoreElement = document.querySelector("#score");
+  var bestElement = document.querySelector("#best");
+  var waveElement = document.querySelector("#wave");
+  var livesElement = document.querySelector("#lives");
+  var messageElement = document.querySelector("#message");
 
   var width = 960;
   var height = 540;
@@ -28,24 +24,25 @@ window.onload = function(){
     y: height-80
   };
   var keys = {};
+  var firing = false;
 
-  var player_width = 34;
-  var player_height = 34;
+  var playerWidth = 34;
+  var playerHeight = 34;
   var score = 0;
   var health = 5;
 
-  var _bullets = [];
-  var bullet_width = 2;
-  var bullet_height = 12;
-  var bullet_speed = 650;
+  var bullets = [];
+  var bulletWidth = 2;
+  var bulletHeight = 12;
+  var bulletSpeed = 650;
 
-  var _enemies = [];
-  var enemy_width = 36;
-  var enemy_height = 36;
+  var enemies = [];
+  var enemyWidth = 36;
+  var enemyHeight = 36;
 
-  var _lastframe = 0;
-  var _seconds = 0;
-  var _wave = 1;
+  var lastFrame = 0;
+  var seconds = 0;
+  var wave = 1;
 
   var best = 0;
   try {
@@ -59,12 +56,13 @@ window.onload = function(){
     shell.classList.toggle("running", next === "running");
     shell.classList.toggle("paused", next === "paused");
     shell.classList.toggle("over", next === "over");
-    intro_element.hidden = next !== "menu";
-    paused_element.hidden = next !== "paused";
-    over_element.hidden = next !== "over";
-    pause_button.hidden = next === "menu" || next === "over";
+    intro.hidden = next !== "menu";
+    paused.hidden = next !== "paused";
+    over.hidden = next !== "over";
+    pauseButton.hidden = next === "menu" || next === "over";
     if (next !== "running"){
       keys = {};
+      firing = false;
     }
   }
 
@@ -84,11 +82,11 @@ window.onload = function(){
     mouse.y = height-80;
     score = 0;
     health = 5;
-    _seconds = 0;
-    _wave = 1;
-    _bullets = [];
-    _enemies = [];
-    __player = new Player(mouse.x, mouse.y, player_width, player_height);
+    seconds = 0;
+    wave = 1;
+    bullets = [];
+    enemies = [];
+    player = new Player(mouse.x - playerWidth/2, mouse.y - playerHeight/2, playerWidth, playerHeight);
     setMode("running");
     updateHud();
   }
@@ -104,8 +102,8 @@ window.onload = function(){
   function finishGame(){
     saveBest();
     document.querySelector("#final-score").textContent = score.toLocaleString();
-    document.querySelector("#final-time").textContent = Math.floor(_seconds / 60) + ":" + String(Math.floor(_seconds % 60)).padStart(2, "0");
-    document.querySelector("#final-wave").textContent = String(_wave).padStart(2, "0");
+    document.querySelector("#final-time").textContent = Math.floor(seconds / 60) + ":" + String(Math.floor(seconds % 60)).padStart(2, "0");
+    document.querySelector("#final-wave").textContent = String(wave).padStart(2, "0");
     setMode("over");
   }
 
@@ -116,30 +114,27 @@ window.onload = function(){
     this.height = height;
 
     this.draw = function(){
-      c.beginPath();
-      c.save();
-      c.translate(this.x, this.y);
-      c.fillStyle = "#b7c9cf";
-      c.strokeStyle = "#e6f0f1";
-      c.moveTo(0, -24);
-      c.lineTo(-17, 18);
-      c.lineTo(0, 13);
-      c.lineTo(17, 18);
-      c.closePath();
-      c.fill();
-      c.stroke();
-      c.fillStyle = "#f1a15a";
-      c.beginPath();
-      c.moveTo(-5, 16);
-      c.lineTo(0, 27 + Math.sin(_seconds * 28) * 4);
-      c.lineTo(5, 16);
-      c.fill();
-      c.restore();
+      context.beginPath();
+      context.save();
+      context.translate(this.x + this.width/2, this.y + this.height/2);
+      context.fillStyle = "#b7c9cf";
+      context.strokeStyle = "#e6f0f1";
+      context.moveTo(0, -24);
+      context.lineTo(-17, 18);
+      context.lineTo(0, 13);
+      context.lineTo(17, 18);
+      context.closePath();
+      context.fill();
+      context.stroke();
+      context.fillStyle = "#f1a15a";
+      context.beginPath();
+      context.moveTo(-5, 16);
+      context.lineTo(0, 27 + Math.sin(seconds * 28) * 4);
+      context.lineTo(5, 16);
+      context.fill();
+      context.restore();
     };
 
-    this.update = function(){
-      this.draw();
-    };
   }
 
   function Bullet(x, y, width, height, speed){
@@ -150,14 +145,14 @@ window.onload = function(){
     this.speed = speed;
 
     this.draw = function(){
-      c.beginPath();
-      c.rect(this.x, this.y, this.width, this.height);
-      c.fillStyle = "#d9f7f5";
-      c.fill();
+      context.beginPath();
+      context.rect(this.x, this.y, this.width, this.height);
+      context.fillStyle = "#d9f7f5";
+      context.fill();
     };
 
-    this.update = function(){
-      this.y -= this.speed * 0.016;
+    this.update = function(delta){
+      this.y -= this.speed * delta;
       this.draw();
     };
   }
@@ -170,25 +165,25 @@ window.onload = function(){
     this.speed = speed;
 
     this.draw = function(){
-      c.beginPath();
-      c.fillStyle = "#9db89f";
-      c.strokeStyle = "#e6f0f1";
-      c.moveTo(this.x, this.y);
-      c.lineTo(this.x - this.width/2, this.y + this.height/2);
-      c.lineTo(this.x, this.y + this.height);
-      c.lineTo(this.x + this.width/2, this.y + this.height/2);
-      c.closePath();
-      c.fill();
-      c.stroke();
+      context.beginPath();
+      context.fillStyle = "#9db89f";
+      context.strokeStyle = "#e6f0f1";
+      context.moveTo(this.x, this.y);
+      context.lineTo(this.x - this.width/2, this.y + this.height/2);
+      context.lineTo(this.x, this.y + this.height);
+      context.lineTo(this.x + this.width/2, this.y + this.height/2);
+      context.closePath();
+      context.fill();
+      context.stroke();
     };
 
-    this.update = function(){
-      this.y += this.speed * 0.016;
+    this.update = function(delta){
+      this.y += this.speed * delta;
       this.draw();
     };
   }
 
-  var __player = new Player(mouse.x, mouse.y, player_width, player_height);
+  var player = new Player(mouse.x - playerWidth/2, mouse.y - playerHeight/2, playerWidth, playerHeight);
 
   canvas.addEventListener("mousemove", function(event){
     var rect = canvas.getBoundingClientRect();
@@ -198,11 +193,28 @@ window.onload = function(){
   canvas.addEventListener("touchmove", function(event){
     var rect = canvas.getBoundingClientRect();
     var touch = event.changedTouches[0];
-    var touchX = parseInt(touch.clientX);
-    var touchY = parseInt(touch.clientY) - rect.top;
     event.preventDefault();
-    mouse.x = touchX * (width / rect.width);
-    mouse.y = touchY * (height / rect.height);
+    mouse.x = (touch.clientX - rect.left) * (width / rect.width);
+    mouse.y = (touch.clientY - rect.top) * (height / rect.height);
+  });
+
+  function setFiring(next){
+    firing = next && mode === "running";
+    if (firing){
+      fire();
+    }
+  }
+
+  canvas.addEventListener("mousedown", function(event){
+    if (event.button === 0){
+      setFiring(true);
+    }
+  });
+  window.addEventListener("mouseup", function(){
+    setFiring(false);
+  });
+  window.addEventListener("pointerup", function(){
+    setFiring(false);
   });
 
   window.addEventListener("keydown", function(event){
@@ -219,10 +231,16 @@ window.onload = function(){
       if (["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].indexOf(event.code) > -1){
         event.preventDefault();
       }
+      if (event.code === "Space" && !event.repeat){
+        setFiring(true);
+      }
     }
   });
   window.addEventListener("keyup", function(event){
     keys[event.code] = false;
+    if (event.code === "Space"){
+      setFiring(false);
+    }
   });
   window.addEventListener("blur", function(){
     if (mode === "running"){
@@ -232,8 +250,21 @@ window.onload = function(){
 
   document.querySelector("#play").addEventListener("click", startGame);
   document.querySelector("#again").addEventListener("click", startGame);
-  pause_button.addEventListener("click", pauseGame);
+  pauseButton.addEventListener("click", pauseGame);
   document.querySelector("#resume").addEventListener("click", pauseGame);
+  fireButton.addEventListener("pointerdown", function(event){
+    event.preventDefault();
+    setFiring(true);
+  });
+  fireButton.addEventListener("pointerup", function(){
+    setFiring(false);
+  });
+  fireButton.addEventListener("pointercancel", function(){
+    setFiring(false);
+  });
+  fireButton.addEventListener("pointerleave", function(){
+    setFiring(false);
+  });
 
   function collision(a,b){
     return a.x < b.x + b.width &&
@@ -242,56 +273,52 @@ window.onload = function(){
            a.y + a.height > b.y;
   }
 
-  c.font = "1em Arial";
-
-  function drawEnemies(){
+  function spawnEnemy(){
     if (mode !== "running"){
       return;
     }
-    for (var _ = 0; _<1; _++){
-      var x = Math.random()*(width-enemy_width);
-      var y = -enemy_height;
-      var speed = 40 + Math.random()*80;
-      var __enemy = new Enemy(x, y, enemy_width, enemy_height, speed);
-      _enemies.push(__enemy);
-    }
-  }setInterval(drawEnemies, 1000);
+    var x = Math.random()*(width-enemyWidth);
+    var y = -enemyHeight;
+    var speed = 40 + Math.random()*80;
+    var enemy = new Enemy(x, y, enemyWidth, enemyHeight, speed);
+    enemies.push(enemy);
+  }
+  setInterval(spawnEnemy, 1000);
 
   function fire(){
-    if (mode !== "running"){
+    if (mode !== "running" || !firing){
       return;
     }
-    for (var _ = 0; _<1; _++){
-      var x = mouse.x-bullet_width/2;
-      var y = mouse.y-player_height;
-      var __bullet = new Bullet(x, y, bullet_width, bullet_height, bullet_speed);
-      _bullets.push(__bullet);
-    }
-  }setInterval(fire, 200);
+    var x = mouse.x-bulletWidth/2;
+    var y = mouse.y-playerHeight;
+    var bullet = new Bullet(x, y, bulletWidth, bulletHeight, bulletSpeed);
+    bullets.push(bullet);
+  }
+  setInterval(fire, 200);
 
   function updateHud(){
-    score_element.textContent = String(score).padStart(6, "0");
-    best_element.textContent = String(best).padStart(6, "0");
-    wave_element.textContent = String(_wave).padStart(2, "0");
-    lives_element.textContent = "■".repeat(health) + "□".repeat(5 - health);
+    scoreElement.textContent = String(score).padStart(6, "0");
+    bestElement.textContent = String(best).padStart(6, "0");
+    waveElement.textContent = String(wave).padStart(2, "0");
+    livesElement.textContent = "■".repeat(health) + "□".repeat(5 - health);
   }
 
   function showMessage(text){
-    message_element.textContent = text;
-    message_element.style.opacity = "1";
+    messageElement.textContent = text;
+    messageElement.classList.add("show");
     setTimeout(function(){
-      message_element.style.opacity = "0";
+      messageElement.classList.remove("show");
     }, 2000);
   }
 
   function drawBackground(){
-    c.beginPath();
-    c.fillStyle = "#071019";
-    c.fillRect(0,0,width,height);
+    context.beginPath();
+    context.fillStyle = "#071019";
+    context.fillRect(0,0,width,height);
   }
 
   function update(delta){
-    _seconds += delta;
+    seconds += delta;
 
     var dx = 0;
     var dy = 0;
@@ -315,45 +342,45 @@ window.onload = function(){
     mouse.x = Math.max(24, Math.min(width-24, mouse.x));
     mouse.y = Math.max(24, Math.min(height-30, mouse.y));
 
-    __player.x = mouse.x - player_width/2;
-    __player.y = mouse.y - player_height/2;
+    player.x = mouse.x - playerWidth/2;
+    player.y = mouse.y - playerHeight/2;
 
-    var nextWave = 1 + Math.floor(_seconds / 25);
-    if (nextWave !== _wave){
-      _wave = nextWave;
+    var nextWave = 1 + Math.floor(seconds / 25);
+    if (nextWave !== wave){
+      wave = nextWave;
       health = Math.min(5, health + 1);
-      showMessage("WAVE " + String(_wave).padStart(2, "0"));
+      showMessage("WAVE " + String(wave).padStart(2, "0"));
       updateHud();
     }
 
-    for (var i=0; i < _bullets.length; i++){
-      _bullets[i].update();
-      if (_bullets[i].y < 0){
-        _bullets.splice(i, 1);
+    for (var i = bullets.length - 1; i >= 0; i--){
+      bullets[i].update(delta);
+      if (bullets[i].y < 0){
+        bullets.splice(i, 1);
       }
     }
 
-    for (var k=0; k < _enemies.length; k++){
-      _enemies[k].update();
-      if(_enemies[k].y > height){
-        _enemies.splice(k, 1);
+    for (var k = enemies.length - 1; k >= 0; k--){
+      enemies[k].update(delta);
+      if (enemies[k].y > height){
+        enemies.splice(k, 1);
         health -= 1;
         updateHud();
-      if(health <= 0){
-        alert("You DIED!\nYour score was "+score);
-        finishGame();
-        return;
-       }
+        if (health <= 0){
+          finishGame();
+          return;
+        }
       }
     }
 
-    for(var j = _enemies.length-1; j >= 0; j--){
-      for(var l = _bullets.length-1; l >= 0; l--){
-        if(collision(_enemies[j], _bullets[l])){
-          _enemies.splice(j, 1);
-          _bullets.splice(l, 1);
+    for (var j = enemies.length - 1; j >= 0; j--){
+      for (var l = bullets.length - 1; l >= 0; l--){
+        if (collision(enemies[j], bullets[l])){
+          enemies.splice(j, 1);
+          bullets.splice(l, 1);
           score++;
           updateHud();
+          break;
         }
       }
     }
@@ -362,23 +389,23 @@ window.onload = function(){
   function render(){
     drawBackground();
     if (mode === "menu"){
-      __player.x = width/2 - player_width/2;
-      __player.y = height-80 - player_height/2;
+      player.x = width/2 - playerWidth/2;
+      player.y = height-80 - playerHeight/2;
     }
-    for (var i=0; i < _bullets.length; i++){
-      _bullets[i].draw();
+    for (var i = 0; i < bullets.length; i++){
+      bullets[i].draw();
     }
-    for (var k=0; k < _enemies.length; k++){
-      _enemies[k].draw();
+    for (var k = 0; k < enemies.length; k++){
+      enemies[k].draw();
     }
-    __player.draw();
+    player.draw();
   }
 
   function animate(){
     requestAnimationFrame(animate);
     var now = performance.now();
-    var delta = Math.min((now - (_lastframe || now)) / 1000, 0.035);
-    _lastframe = now;
+    var delta = Math.min((now - (lastFrame || now)) / 1000, 0.035);
+    lastFrame = now;
     if (mode === "running"){
       update(delta);
     }
